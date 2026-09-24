@@ -1,0 +1,395 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "type": "@mentoster/n8n-nodes-telegram-polling.telegramPollingTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -256
+      ],
+      "id": "29be09a1-81e2-4899-8993-fbd647e08103",
+      "name": "Telegram Trigger",
+      "credentials": {
+        "telegramApi": {
+          "id": "<TELEGRAM_CRED_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "82a09e5a-4cc8-446c-91c7-8d381f2bee77"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        -256
+      ],
+      "id": "d45c44f6-594c-4555-acea-3e40ea931569",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        -256
+      ],
+      "id": "9d890d94-4550-4903-9535-7a657ff051c1",
+      "name": "Get a file",
+      "webhookId": "<WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<TELEGRAM_CRED_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-large-v3"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "language",
+              "value": "ru"
+            },
+            {
+              "name": "prompt",
+              "value": "Личный дневник на русском языке. Автор рассказывает о своих мыслях, событиях дня и переживаниях."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        -256
+      ],
+      "id": "ccf5d095-9979-4380-b920-d2b9c2b2a9aa",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "<GROQ_CRED_ID>",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ты — профессиональный редактор и транскрибатор. Твоя задача — обрабатывать сырой текст, полученный из моих голосовых сообщений, и превращать его в структурированный, грамотный и увлекательный текст.\n\nПри обработке строго следуй следующим правилам:\n\n1. Сохранение авторского стиля и «живого» голоса:\n- Не превращай текст в сухую академическую статью или банальный корпоративный пост.\n- Сохраняй мою уникальную интонацию, характерные словечки, юмор, иронию и энергетику, если они есть в аудио.\n- Адаптируй текст так, будто я сам сел и аккуратно написал его от руки, а не просто надиктовал на бегу.\n\n2. Редактура и грамотность:\n- Исправляй все грамматические, орфографические и пунктуационные ошибки.\n- Убирай слова-паразиты (э-э-э, ну, короче, типа, как бы, в общем и т.д.).\n- Сглаживай тавтологию (повторы одних и тех же слов) и убирай заикания.\n- Перефразируй слишком путаные, оборванные или логически незавершенные фразы, но не меняй их изначальный смысл.\n\n3. Структура и вовлечение (Интерес):\n- Сделай текст легко читаемым (сканируемым) для глаз.\n- Разделяй текст на логические абзацы.\n- Используй списки (маркированные или нумерованные) там, где я перечисляю мысли или факты.\n- Выделяй ключевые мысли или важные тезисы жирным шрифтом.\n- Если уместно по контексту, добавляй точечные, функциональные эмодзи в качестве визуальных якорей (не злоупотребляй ими).\n\nТвой результат должен быть: чистым, грамотным, структурированным и приятным для чтения, но при этом на 100% передавать МЕНЯ и мои мысли.\n\nВот сырой текст из моего голосового сообщения: {{ $json.text }}\n\nВ самом конце обязательно добавь отдельной строкой пометку: [Создано с помощью ИИ]",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        496,
+        -256
+      ],
+      "id": "c754331e-4204-461f-8704-2475e7893b25",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -32
+      ],
+      "id": "79813ab0-1146-46e9-8c4c-7dda7922b555",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "<OPENROUTER_CRED_ID>",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/<TELEGRAM_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": <YOUR_PERSONAL_ID>,\n  \"text\": {{ JSON.stringify($json.text) }},\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"✅ Опубликовать\",\n          \"callback_data\": \"publish\"\n        },\n        {\n          \"text\": \"✏️ Переписать\",\n          \"callback_data\": \"rewrite\"\n        }\n      ]\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        -256
+      ],
+      "id": "dab10aa1-74be-4442-a29f-d886d746becd",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nif (item.binary && item.binary.data && item.binary.data.fileName) {\n  item.binary.data.fileName = item.binary.data.fileName.replace(/\\.oga$/i, '.ogg');\n  item.binary.data.mimeType = 'audio/ogg';\n}\nreturn item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        -256
+      ],
+      "id": "120d1c86-a733-4f60-988a-17baa9230a89",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ]
+      },
+      "type": "@mentoster/n8n-nodes-telegram-polling.telegramPollingTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -48
+      ],
+      "id": "87c97bc2-42fe-473c-a5ff-a4a0db03c846",
+      "name": "Telegram Trigger1",
+      "credentials": {
+        "telegramApi": {
+          "id": "<TELEGRAM_CRED_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.callback_query.data }}",
+                    "rightValue": "publish",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c80bd06d-1cce-424e-8ecf-72c5fc2e586e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        -48
+      ],
+      "id": "8c4c07ea-8193-4acd-9d62-7c8d0eef3eb0",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/<TELEGRAM_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": <YOUR_CHANNEL_ID>,\n  \"text\": {{ JSON.stringify($json.callback_query.message.text) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -208,
+        -48
+      ],
+      "id": "4caf314d-b5bf-4d13-9c04-17037775e574",
+      "name": "HTTP Request2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "<VERSION_ID>",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "<INSTANCE_ID>"
+  },
+  "id": "<WORKFLOW_ID>",
+  "tags": []
+}
